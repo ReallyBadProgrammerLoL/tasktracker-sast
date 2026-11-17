@@ -1,0 +1,34 @@
+name: TaskTracker SAST
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OpenGrep 2.0.0
+        run: |
+          curl --fail --location --retry 3 https://github.com/opengrep/opengrep/releases/download/v2.0.0/opengrep_linux_x86 -o "$RUNNER_TEMP/opengrep"
+          chmod +x "$RUNNER_TEMP/opengrep"
+          "$RUNNER_TEMP/opengrep" --version
+
+      - name: Security Gate (CWE-89)
+        run: |
+          test -s TaskTracker-cs/Program.cs
+          "$RUNNER_TEMP/opengrep" scan --strict --error --config rules/csharp-sqli.yaml --sarif-output=TaskTracker.sarif TaskTracker-cs/
+
+      - name: Save SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskTracker-SARIF
+          path: TaskTracker.sarif
+          if-no-files-found: error
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build TaskTracker
+        run: dotnet build TaskTracker-cs/TaskTracker.csproj --configuration Release
