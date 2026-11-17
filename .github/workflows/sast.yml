@@ -17,14 +17,14 @@ jobs:
       - name: Security Gate (CWE-89)
         run: |
           test -s TaskTracker-cs/Program.cs
-          "$RUNNER_TEMP/opengrep" scan --strict --error --config rules/csharp-sqli.yaml --sarif-output=TaskTracker.sarif TaskTracker-cs/
+          "$RUNNER_TEMP/opengrep" scan --strict --error --config rules/csharp-sqli.yaml --sarif-output ./TaskTracker.sarif TaskTracker-cs/
 
       - name: Save SARIF
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: TaskTracker-SARIF
-          path: TaskTracker.sarif
+          path: ./TaskTracker.sarif
           if-no-files-found: error
 
       - uses: actions/setup-dotnet@v4
