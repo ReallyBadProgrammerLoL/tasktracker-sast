@@ -17,7 +17,7 @@ jobs:
       - name: Security Gate (CWE-89)
         run: |
           test -s TaskTracker-cs/Program.cs
-          "$RUNNER_TEMP/opengrep" scan --strict --error --config rules/csharp-sqli.yaml --sarif-output ./TaskTracker.sarif TaskTracker-cs/
+          "$RUNNER_TEMP/opengrep" scan --strict --error --config rules/csharp-sqli.yml --sarif-output ./TaskTracker.sarif TaskTracker-cs/
 
       - name: Save SARIF
         if: always()
