@@ -20,7 +20,8 @@ app.MapGet("/tasks", (string owner) =>
     using var conn = new SqliteConnection(ConnStr);
     conn.Open();
     var cmd = conn.CreateCommand();
-    cmd.CommandText = "SELECT id, title FROM tasks WHERE owner = '" + owner + "'";
+    cmd.CommandText = "SELECT id, title FROM tasks WHERE owner = $owner";
+    cmd.Parameters.AddWithValue("$owner", owner);
     var result = new List<object>();
     using var r = cmd.ExecuteReader();
     while (r.Read())
@@ -34,8 +35,9 @@ app.MapPost("/login", (string username, string password) =>
     using var conn = new SqliteConnection(ConnStr);
     conn.Open();
     var cmd = conn.CreateCommand();
-    cmd.CommandText = "SELECT COUNT(*) FROM users WHERE name = '" + username +
-                      "' AND pass_hash = '" + Md5(password) + "'";
+    cmd.CommandText = "SELECT COUNT(*) FROM users WHERE name = $name AND pass_hash = $hash";
+    cmd.Parameters.AddWithValue("$name", username);
+    cmd.Parameters.AddWithValue("$hash", Md5(password));
     var ok = Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     return ok ? Results.Ok(new { token = ApiKey }) : Results.Unauthorized();
 });
@@ -89,6 +91,7 @@ static void InitDb()
         CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, owner TEXT, title TEXT);
         CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, pass_hash TEXT);
         INSERT OR IGNORE INTO tasks (id, owner, title) VALUES (1, 'alice', 'Prepare report'), (2, 'bob', 'Fix bug #42');
-        INSERT OR IGNORE INTO users (id, name, pass_hash) VALUES (1, 'admin', '" + Md5(AdminPassword) + "');";
+        INSERT OR IGNORE INTO users (id, name, pass_hash) VALUES (1, 'admin', $hash);";
+    cmd.Parameters.AddWithValue("$hash", Md5(AdminPassword));
     cmd.ExecuteNonQuery();
 }
