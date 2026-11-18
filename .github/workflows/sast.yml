@@ -1,13 +1,15 @@
 name: TaskTracker SAST
 on: [push, pull_request, workflow_dispatch]
+
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
       - name: Install OpenGrep 2.0.0
         run: |
           curl --fail --location --retry 3 https://github.com/opengrep/opengrep/releases/download/v2.0.0/opengrep_linux_x86 -o "$RUNNER_TEMP/opengrep"
@@ -27,8 +29,19 @@ jobs:
           path: ./TaskTracker.sarif
           if-no-files-found: error
 
+      - name: Commit SARIF to repo
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          if [ -f TaskTracker.sarif ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add TaskTracker.sarif
+            git diff --cached --quiet || { git commit -m "Update SARIF report [skip ci]" && git push; }
+          fi
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+
       - name: Build TaskTracker
         run: dotnet build TaskTracker-cs/TaskTracker.csproj --configuration Release
